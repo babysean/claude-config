@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Claude Code 개인 에이전트 설정 설치 스크립트
 #
-#   ./install.sh          symlink 설치 (기본, 권장 — 레포를 고치면 즉시 반영)
-#   ./install.sh --copy   복사 설치 (레포 폴더를 지워도 유지)
-#   ./install.sh --dry-run  무엇을 할지만 출력
+#   ./install.sh            symlink 설치 (기본, 권장 — 레포를 고치면 즉시 반영)
+#   ./install.sh --symlink  위와 같음 (명시용)
+#   ./install.sh --copy     복사 설치 (레포 폴더를 지워도 유지)
+#   ./install.sh --dry-run  무엇을 할지만 출력, 실제 변경 없음
+#
+# 설치 대상은 기본 ~/.claude 다. CLAUDE_HOME 환경변수로 바꿀 수 있다.
 #
 set -euo pipefail
 
@@ -17,7 +20,7 @@ for arg in "$@"; do
     --copy)    MODE=copy ;;
     --symlink) MODE=symlink ;;
     --dry-run) DRY=1 ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) awk 'NR>1 && !/^#/ {exit} NR>1' "$0"; exit 0 ;;
     *) echo "알 수 없는 옵션: $arg" >&2; exit 1 ;;
   esac
 done
