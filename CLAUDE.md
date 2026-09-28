@@ -97,3 +97,12 @@
 
 **재현 → 가설 검증 → 근본 원인 → 회귀 테스트.** 재현 케이스 없이 추측으로 고치지
 않는다. 상세 절차는 각 도메인 에이전트 정의의 "Bug Investigation" 을 따른다.
+
+## 7. Graphify (코드 지식 그래프)
+
+구조·의존성 질문은 `graphify-out/graph.json` 존재 시 grep/Explore **전에** `query/explain/path/affected` 사용 (§2 토큰 효율).
+
+- **수정 전:** `graphify affected "X"` → 영향 범위 파악 (§6·ponytail 보충)
+- **수정 후:** `graphify update .` → 갱신 (LLM 무비용)
+- **그래프 미존재:** 자동 생성 금지, 사용자에게 한 번만 제안. 결과는 힌트 — 검증은 실제 파일 (§3)
+- **서브에이전트:** 프롬프트에 그래프 존재 여부 명시
