@@ -7,6 +7,7 @@
 #   ./install.sh --dry-run  무엇을 할지만 출력, 실제 변경 없음
 #
 # 설치 대상은 기본 ~/.claude 다. CLAUDE_HOME 환경변수로 바꿀 수 있다.
+# [3/3] 에서 플러그인(ponytail, context7)과 graphify 도 설치한다 (claude/uv 가 있을 때만).
 #
 set -euo pipefail
 
@@ -53,7 +54,7 @@ link_or_copy() {
 
 run mkdir -p "$DEST/agents"
 
-echo "[1/2] 에이전트"
+echo "[1/3] 에이전트"
 for f in "$REPO"/agents/*.md; do
   name="$(basename "$f")"
   link_or_copy "$f" "$DEST/agents/$name"
@@ -61,9 +62,34 @@ for f in "$REPO"/agents/*.md; do
 done
 
 echo
-echo "[2/2] CLAUDE.md"
+echo "[2/3] CLAUDE.md"
 link_or_copy "$REPO/CLAUDE.md" "$DEST/CLAUDE.md"
 echo "  CLAUDE.md"
+
+echo
+echo "[3/3] 플러그인 / graphify (선택 — 실패해도 계속)"
+# 마켓플레이스(GitHub repo 또는 이름), 플러그인 id
+MARKETPLACES=(DietrichGebert/ponytail)
+PLUGINS=(ponytail@ponytail context7@claude-plugins-official)
+if command -v claude >/dev/null 2>&1; then
+  # 이미 등록/설치돼 있어도 에러 없이 넘어가도록 || 로 경고만 남긴다. 설정은 claude CLI 가 등록한다.
+  for m in "${MARKETPLACES[@]}"; do
+    run claude plugin marketplace add "$m" --scope user || echo "  경고: 마켓플레이스 등록 실패/이미 있음: $m"
+  done
+  for p in "${PLUGINS[@]}"; do
+    run claude plugin install "$p" --scope user || echo "  경고: 플러그인 설치 실패: $p"
+  done
+else
+  echo "  경고: claude CLI 없음 — 플러그인 설치를 건너뜀 (${PLUGINS[*]})"
+fi
+
+if command -v graphify >/dev/null 2>&1; then
+  echo "  graphify 이미 설치됨"
+elif command -v uv >/dev/null 2>&1; then
+  run uv tool install graphifyy || echo "  경고: graphify 설치 실패"
+else
+  echo "  경고: uv 없음 — graphify 건너뜀. 설치: https://docs.astral.sh/uv/ 후 'uv tool install graphifyy'"
+fi
 
 echo
 if [ "$DRY" = 1 ]; then
