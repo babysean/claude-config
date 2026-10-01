@@ -7,7 +7,7 @@
 #   ./install.sh --dry-run  무엇을 할지만 출력, 실제 변경 없음
 #
 # 설치 대상은 기본 ~/.claude 다. CLAUDE_HOME 환경변수로 바꿀 수 있다.
-# [3/3] 에서 플러그인(ponytail, context7)과 graphify 도 설치한다 (claude/uv 가 있을 때만).
+# [3/3] 에서 플러그인(ponytail, context7, typescript-lsp, pyright-lsp)과 graphify 도 설치한다 (claude/uv 가 있을 때만).
 #
 set -euo pipefail
 
@@ -70,7 +70,7 @@ echo
 echo "[3/3] 플러그인 / graphify (선택 — 실패해도 계속)"
 # 마켓플레이스(GitHub repo 또는 이름), 플러그인 id
 MARKETPLACES=(DietrichGebert/ponytail)
-PLUGINS=(ponytail@ponytail context7@claude-plugins-official)
+PLUGINS=(ponytail@ponytail context7@claude-plugins-official typescript-lsp@claude-plugins-official pyright-lsp@claude-plugins-official)
 if command -v claude >/dev/null 2>&1; then
   # 이미 등록/설치돼 있어도 에러 없이 넘어가도록 || 로 경고만 남긴다. 설정은 claude CLI 가 등록한다.
   for m in "${MARKETPLACES[@]}"; do
@@ -89,6 +89,23 @@ elif command -v uv >/dev/null 2>&1; then
   run uv tool install graphifyy || echo "  경고: graphify 설치 실패"
 else
   echo "  경고: uv 없음 — graphify 건너뜀. 설치: https://docs.astral.sh/uv/ 후 'uv tool install graphifyy'"
+fi
+
+# LSP 플러그인은 서버 바이너리가 PATH 에 있어야 동작한다. (pyright 패키지가 pyright-langserver 를 제공)
+if command -v typescript-language-server >/dev/null 2>&1; then
+  echo "  typescript-language-server 이미 설치됨"
+elif command -v npm >/dev/null 2>&1; then
+  run npm install -g typescript-language-server typescript || echo "  경고: typescript-language-server 설치 실패"
+else
+  echo "  경고: npm 없음 — typescript-language-server 건너뜀. 'npm install -g typescript-language-server typescript'"
+fi
+
+if command -v pyright-langserver >/dev/null 2>&1; then
+  echo "  pyright-langserver 이미 설치됨"
+elif command -v npm >/dev/null 2>&1; then
+  run npm install -g pyright || echo "  경고: pyright 설치 실패"
+else
+  echo "  경고: npm 없음 — pyright 건너뜀. 'npm install -g pyright'"
 fi
 
 echo
