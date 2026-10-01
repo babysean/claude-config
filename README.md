@@ -13,6 +13,7 @@ Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙과 전�
 | `scripts/token-metrics.py` | — | 위임 정책의 컨텍스트 효율 측정 |
 | ponytail@ponytail | Claude Code 플러그인 | 최소 구현 강제 (SessionStart/SubagentStart/UserPromptSubmit hook) |
 | context7 | Claude Code 플러그인 | 라이브러리 최신 문서 조회 MCP |
+| typescript-lsp, pyright-lsp | Claude Code 플러그인 | TS/Python LSP. 서버 바이너리는 `npm install -g` |
 | graphifyy (PyPI) | CLI: PATH | 코드 지식 그래프, `uv tool install graphifyy` |
 
 ## 전역 규칙 (`CLAUDE.md`)
@@ -107,18 +108,22 @@ cd ~/Personal/claude-config
 반영되고, `git pull` 한 번으로 모든 PC 가 같은 설정이 된다.
 
 설치 과정은 3단계로 나뉜다. [1/3] 에이전트 정의, [2/3] 전역 규칙 `CLAUDE.md`, [3/3] 도구 설치.
-도구는 다음 3가지다:
+도구는 다음 4가지다:
 
 - **ponytail** — Claude Code 플러그인. 최소 구현 강제 (SessionStart/SubagentStart/UserPromptSubmit hook).
   플러그인 `ponytail@ponytail` (마켓플레이스 GitHub `DietrichGebert/ponytail`).
 - **context7** — Claude Code 플러그인. 라이브러리 최신 문서를 자동 조회하는 MCP.
   플러그인 `context7@claude-plugins-official` (공식 마켓플레이스).
+- **typescript-lsp / pyright-lsp** — Claude Code 플러그인. TS/Python 코드 인텔리전스(LSP).
+  플러그인 `typescript-lsp@claude-plugins-official`, `pyright-lsp@claude-plugins-official`.
+  서버는 `npm install -g typescript-language-server typescript pyright` 로 설치.
 - **graphify** — CLI 도구. 코드베이스의 지식 그래프를 생성해 구조 질의를 빠르게 한다 (CLAUDE.md §7).
   `uv tool install graphifyy`.
 
 **선택 의존성:**
 - `claude` CLI: 없으면 경고 후 플러그인 설치를 건너뜀.
 - `uv`: 없으면 경고와 uv 설치 안내만 출력하고 graphify 는 건너뜀.
+- `npm`: 없으면 경고만 출력하고 LSP 서버(`typescript-language-server`, `pyright-langserver`) 설치는 건너뜀.
 
 | 옵션 | 동작 |
 |---|---|
@@ -171,7 +176,7 @@ effort: medium                  # low | medium | high
 
 ## 포함하지 않는 것
 
-`~/.claude/settings.json` 은 PC 마다 다른 권한 허용 목록·statusLine 경로가 들어가므로 의도적으로 제외했다. 필요한 항목만 새 PC 에서 직접 설정한다. 다만 플러그인(`ponytail`, `context7`)은 설치 시 Claude Code 가 자동으로 `settings.json` 에 등록하므로 수동 설정이 필요 없다.
+`~/.claude/settings.json` 은 PC 마다 다른 권한 허용 목록·statusLine 경로가 들어가므로 의도적으로 제외했다. 필요한 항목만 새 PC 에서 직접 설정한다. 다만 플러그인(`ponytail`, `context7`, `typescript-lsp`, `pyright-lsp`)은 설치 시 Claude Code 가 자동으로 `settings.json` 에 등록하므로 수동 설정이 필요 없다.
 
 프로젝트 전용 에이전트(`<repo>/.claude/agents/`)도 해당 레포가 관리한다.
 `CLAUDE.md` §4 에 어느 레포에 무엇이 있는지만 적어 둔다.
