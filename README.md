@@ -142,9 +142,7 @@ cd ~/Personal/claude-config
 CLAUDE_HOME=~/test-claude ./install.sh --dry-run
 ```
 
-기존 `~/.claude/CLAUDE.md` 나 동명의 에이전트가 있으면
-`~/.claude/.backup-<타임스탬프>/` 로 백업한 뒤 교체한다. 이 백업 폴더는
-`.gitignore` 에 걸려 있어 커밋되지 않는다.
+기존 `~/.claude/CLAUDE.md` 나 동명의 에이전트가 있으면 백업 없이 교체한다.
 
 ## 설정 수정 흐름
 

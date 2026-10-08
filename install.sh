@@ -26,9 +26,6 @@ for arg in "$@"; do
   esac
 done
 
-STAMP="$(date +%Y%m%d-%H%M%S)"
-BACKUP="$DEST/.backup-$STAMP"
-
 run() { if [ "$DRY" = 1 ]; then echo "  [dry-run] $*"; else "$@"; fi; }
 
 echo "레포 : $REPO"
@@ -36,18 +33,8 @@ echo "대상 : $DEST"
 echo "모드 : $MODE"
 echo
 
-# 기존 파일을 덮어쓰기 전에 백업한다.
-backup() {
-  local target="$1"
-  [ -e "$target" ] || [ -L "$target" ] || return 0
-  run mkdir -p "$BACKUP"
-  run cp -RP "$target" "$BACKUP/"
-  echo "  백업: $(basename "$target") -> ${BACKUP#$HOME/~}"
-}
-
 link_or_copy() {
   local src="$1" dst="$2"
-  backup "$dst"
   run rm -rf "$dst"
   if [ "$MODE" = symlink ]; then run ln -s "$src" "$dst"; else run cp "$src" "$dst"; fi
 }
@@ -112,6 +99,5 @@ echo
 if [ "$DRY" = 1 ]; then
   echo "dry-run 완료 — 실제로 바뀐 것은 없다."
 else
-  [ -d "$BACKUP" ] && echo "기존 파일 백업 위치: $BACKUP"
   echo "설치 완료. Claude Code 를 새로 띄운 뒤 /agents 로 확인한다."
 fi
