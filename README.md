@@ -8,7 +8,7 @@ Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙과 전�
 | 경로 | 설치 위치 | 역할 |
 |---|---|---|
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` | 전역 작업 규칙 — 위임 정책, 라우팅 표, 웹 검색 출처 검증, 버그 대응 순서 |
-| `agents/*.md` | `~/.claude/agents/` | 전문 에이전트 14종 |
+| `agents/*.md` | `~/.claude/agents/` | 전문 에이전트 15종 |
 | `install.sh` | — | 설치 스크립트 (symlink / 복사). [1/3] 에이전트, [2/3] CLAUDE.md, [3/3] 도구 설치 |
 | `scripts/token-metrics.py` | — | 위임 정책의 컨텍스트 효율 측정 |
 | ponytail@ponytail | Claude Code 플러그인 | 최소 구현 강제 (SessionStart/SubagentStart/UserPromptSubmit hook) |
@@ -40,27 +40,31 @@ Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙과 전�
 `쓰기` 열이 없는 에이전트는 `Edit`/`Write` 도구가 없어 코드를 고치지 못한다
 (분석·감사·설명 전용).
 
-| 이름 | 담당 | 모델 | effort | 쓰기 |
-|---|---|---|---|---|
-| `software-architect` | 시스템 설계, 기술 스택 결정, 대규모 리팩터링 계획 | opus | high | — |
-| `security-expert` | 취약점 점검, 인증/인가 검토, OWASP | opus | high | — |
-| `backend-engineer` | 서버 로직, REST/GraphQL API, 비즈니스 로직 | sonnet | medium | ✓ |
-| `frontend-engineer` | UI 컴포넌트, 스타일링, 클라이언트 상태 관리 | sonnet | medium | ✓ |
-| `database-administrator` | 스키마 설계, 쿼리 튜닝, 마이그레이션 | sonnet | medium | ✓ |
-| `code-reviewer` | 작성된 코드의 품질·버그 감사 | sonnet | high | — |
-| `test-engineer` | 테스트 작성, 커버리지 분석, 테스트 전략 | sonnet | medium | ✓ |
-| `devops-engineer` | CI/CD, Docker/K8s, 배포, 인프라 | sonnet | medium | ✓ |
-| `performance-engineer` | 병목 분석, 프로파일링, 최적화 | sonnet | high | — |
-| `data-engineer` | ETL 파이프라인, 데이터 모델링, 스트림 처리 | sonnet | medium | ✓ |
-| `ml-ai-engineer` | ML 모델, LLM 연동, RAG, 프롬프트 설계 | sonnet | medium | ✓ |
-| `codebase-explainer` | 낯선 레포 구조·흐름 파악, 온보딩 로드맵 | sonnet | medium | — |
-| `project-manager` | 3개 이상 도메인이 얽힌 대형 다단계 작업 조율 | sonnet | medium | ✓ |
-| `technical-writer` | README, API 문서, ADR, 체인지로그 | haiku | low | ✓ |
+`색` 은 frontmatter `color` 로, Claude Code 작업 목록과 트랜스크립트에서 에이전트를 구분하는 표시색이다. 부서가 아니라 행동으로 묶는다 — blue 코드 작성, yellow 읽기 전용 감사, purple 읽기 전용 설계·설명, green 문서, orange 조율.
 
-`backend-engineer` · `frontend-engineer` · `database-administrator` ·
-`performance-engineer` 에는 **Bug Investigation** 절이 있다. `CLAUDE.md` §2 가
-원인 미상 버그를 도메인 전문가에게 넘기라고 지시하므로, 받는 쪽에 조사 절차가
-있어야 한다.
+| 이름 | 담당 | 모델 | effort | 색 | 쓰기 |
+|---|---|---|---|---|---|
+| `software-architect` | 시스템 설계, 기술 스택 결정, 대규모 리팩터링 계획 | opus | high | purple | — |
+| `security-expert` | 취약점 점검, 인증/인가 검토, OWASP | opus | high | yellow | — |
+| `backend-engineer` | 서버 로직, REST/GraphQL API, 비즈니스 로직 | sonnet | medium | blue | ✓ |
+| `frontend-engineer` | UI 컴포넌트, 스타일링, 클라이언트 상태 관리 | sonnet | medium | blue | ✓ |
+| `database-administrator` | 스키마 설계, 쿼리 튜닝, 마이그레이션 | sonnet | medium | blue | ✓ |
+| `code-reviewer` | 작성된 코드의 품질·버그 감사 | sonnet | high | yellow | — |
+| `test-engineer` | 테스트 작성, 커버리지 분석, 테스트 전략 | sonnet | medium | blue | ✓ |
+| `devops-engineer` | CI/CD, Docker/K8s, 배포, 인프라 | sonnet | medium | blue | ✓ |
+| `performance-engineer` | 병목 분석, 프로파일링, 최적화 | sonnet | high | yellow | — |
+| `codebase-archaeologist` | 세션·도구를 거쳐 쌓인 코드 불일치·중복·드리프트 감사 | opus | high | yellow | — |
+| `data-engineer` | ETL 파이프라인, 데이터 모델링, 스트림 처리 | sonnet | medium | blue | ✓ |
+| `ml-ai-engineer` | ML 모델, LLM 연동, RAG, 프롬프트 설계 | sonnet | medium | blue | ✓ |
+| `codebase-explainer` | 낯선 레포 구조·흐름 파악, 온보딩 로드맵 | sonnet | medium | purple | — |
+| `project-manager` | 3개 이상 도메인이 얽힌 대형 다단계 작업 조율 | sonnet | medium | orange | ✓ |
+| `technical-writer` | README, API 문서, ADR, 체인지로그 | haiku | low | green | ✓ |
+
+`backend-engineer` · `frontend-engineer` · `database-administrator` · `data-engineer` ·
+`devops-engineer` · `ml-ai-engineer` 에는 **Bug Investigation** 절이 있고,
+`performance-engineer` 는 같은 순서를 **When the Regression Is New** 절로 갖는다.
+`CLAUDE.md` §2 가 원인 미상 버그를 도메인 전문가에게 넘기라고 지시하므로, 받는 쪽에
+조사 절차가 있어야 한다.
 
 `project-manager` 는 위임 정책이 대체한다. 사용자가 이름을 직접 부르거나 여러
 전문 분야가 얽힌 다단계 작업일 때만 쓴다.

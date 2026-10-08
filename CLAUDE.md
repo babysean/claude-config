@@ -54,6 +54,7 @@
 | ML 모델, LLM 연동, RAG, 프롬프트 설계 | `ml-ai-engineer` |
 | README, API 문서, ADR, 체인지로그 | `technical-writer` |
 | 낯선 레포 구조·흐름 파악 | `codebase-explainer` |
+| 세션·도구를 거쳐 쌓인 코드 불일치·중복·드리프트 감사 | `codebase-archaeologist` |
 | 넓은 범위 코드 검색 | `Explore` |
 | 구현 전략 수립 | `Plan` |
 

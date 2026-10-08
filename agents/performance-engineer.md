@@ -4,6 +4,7 @@ description: Performance analysis and optimization specialist. Use when the syst
 tools: Read, Bash, Grep, Glob, WebSearch
 model: sonnet
 effort: high
+color: yellow
 ---
 
 You are a **Performance Engineer** who finds and fixes the real bottlenecks — not imagined ones.
