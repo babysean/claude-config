@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code 개인 에이전트 설정 설치 스크립트
+# Claude Code 개인 설정 설치 스크립트
 #
 #   ./install.sh            symlink 설치 (기본, 권장 — 레포를 고치면 즉시 반영)
 #   ./install.sh --symlink  위와 같음 (명시용)
@@ -7,7 +7,7 @@
 #   ./install.sh --dry-run  무엇을 할지만 출력, 실제 변경 없음
 #
 # 설치 대상은 기본 ~/.claude 다. CLAUDE_HOME 환경변수로 바꿀 수 있다.
-# [3/3] 에서 플러그인(ponytail, context7, typescript-lsp, pyright-lsp)과 graphify 도 설치한다 (claude/uv 가 있을 때만).
+# [2/2] 에서 플러그인(ponytail, context7, typescript-lsp, pyright-lsp)과 graphify 도 설치한다 (claude/uv 가 있을 때만).
 #
 set -euo pipefail
 
@@ -39,22 +39,20 @@ link_or_copy() {
   if [ "$MODE" = symlink ]; then run ln -s "$src" "$dst"; else run cp "$src" "$dst"; fi
 }
 
-run mkdir -p "$DEST/agents"
-
-echo "[1/3] 에이전트"
-for f in "$REPO"/agents/*.md; do
-  name="$(basename "$f")"
-  link_or_copy "$f" "$DEST/agents/$name"
-  echo "  $name"
-done
-
-echo
-echo "[2/3] CLAUDE.md"
+echo "[1/2] CLAUDE.md"
+run mkdir -p "$DEST"
 link_or_copy "$REPO/CLAUDE.md" "$DEST/CLAUDE.md"
 echo "  CLAUDE.md"
+# 2026-10-20 역할 에이전트 폐기: 예전 설치가 남긴 링크(이제 끊어짐)를 지운다
+if [ -d "$DEST/agents" ]; then
+  find "$DEST/agents" -maxdepth 1 -type l -lname "$REPO/agents/*" -print | while read -r l; do
+    run rm "$l"
+    echo "  옛 에이전트 링크 제거: $(basename "$l")"
+  done
+fi
 
 echo
-echo "[3/3] 플러그인 / graphify (선택 — 실패해도 계속)"
+echo "[2/2] 플러그인 / graphify (선택 — 실패해도 계속)"
 # 마켓플레이스(GitHub repo 또는 이름), 플러그인 id
 MARKETPLACES=(DietrichGebert/ponytail)
 PLUGINS=(ponytail@ponytail context7@claude-plugins-official typescript-lsp@claude-plugins-official pyright-lsp@claude-plugins-official)
@@ -99,5 +97,5 @@ echo
 if [ "$DRY" = 1 ]; then
   echo "dry-run 완료 — 실제로 바뀐 것은 없다."
 else
-  echo "설치 완료. Claude Code 를 새로 띄운 뒤 /agents 로 확인한다."
+  echo "설치 완료. Claude Code 를 새로 띄우면 반영된다."
 fi

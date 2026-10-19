@@ -1,16 +1,14 @@
 # claude-config
 
-Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙과 전문 에이전트를
-쓰기 위한 저장소.
+Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙을 쓰기 위한 저장소.
 
 ## 구성
 
 | 경로 | 설치 위치 | 역할 |
 |---|---|---|
-| `CLAUDE.md` | `~/.claude/CLAUDE.md` | 전역 작업 규칙 — 위임 정책, 라우팅 표, 웹 검색 출처 검증, 버그 대응 순서 |
-| `agents/*.md` | `~/.claude/agents/` | 전문 에이전트 15종 |
-| `install.sh` | — | 설치 스크립트 (symlink / 복사). [1/3] 에이전트, [2/3] CLAUDE.md, [3/3] 도구 설치 |
-| `scripts/token-metrics.py` | — | 위임 정책의 컨텍스트 효율 측정 |
+| `CLAUDE.md` | `~/.claude/CLAUDE.md` | 전역 작업 규칙 — 범용 + 매뉴얼 방식, 증명, 매뉴얼 고치기 루프, 웹 검색 출처 검증, 버그 대응 순서 |
+| `install.sh` | — | 설치 스크립트 (symlink / 복사). [1/2] CLAUDE.md, [2/2] 도구 설치 |
+| `scripts/token-metrics.py` | — | 작업 방식별 토큰·교정 측정 |
 | ponytail@ponytail | Claude Code 플러그인 | 최소 구현 강제 (SessionStart/SubagentStart/UserPromptSubmit hook) |
 | context7 | Claude Code 플러그인 | 라이브러리 최신 문서 조회 MCP |
 | typescript-lsp, pyright-lsp | Claude Code 플러그인 | TS/Python LSP. 서버 바이너리는 `npm install -g` |
@@ -18,84 +16,48 @@ Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙과 전�
 
 ## 전역 규칙 (`CLAUDE.md`)
 
-메인 세션이 **총괄(orchestrator)** 이다. 직접 처리할지 위임할지 스스로
-판단하고, 위임했더라도 최종 판단과 사용자 응답은 메인 세션이 한다.
+메인 세션이 **직접** 일하고, 업무 지식은 에이전트가 아니라 **매뉴얼**(레포의
+스킬·커맨드·규칙 파일)에 둔다.
 
 | 절 | 내용 |
 |---|---|
-| §1 | 직접 처리 — 읽기·실행·대화만. **파일을 고치는 작업은 없다** |
-| §2 | 위임 — 파일을 고치는 모든 작업 + 라우팅 표. 1줄 수정도 위임한다 |
-| §3 | 위임할 때 지킬 것 (컨텍스트 실어 보내기, 결과 검증, 중복 검색 금지) |
-| §4 | `<repo>/.claude/agents/` 정의가 `~/.claude/agents/` 보다 우선 |
-| §5 | 웹 검색 결과를 쓸 때 — 날짜 확인, 신뢰 순서, 버전 명시 |
-| §6 | 버그를 만났을 때 — 재현 → 가설 검증 → 근본 원인 → 회귀 테스트 |
+| §1 | 일하는 순서 — 매뉴얼 찾기 → 직접 처리 → 증명 → 매뉴얼 고치기. 서브에이전트는 넓은 탐색·병렬·웹 읽기·레포 절차일 때만 |
+| §2 | 매뉴얼 — 일 하나에 폴더 하나 (`SKILL.md` · `files/` · `examples/` · `notes.md`) |
+| §3 | 증명 — 실패할 수 있는 검사를 증거와 함께 통과해야 완료 |
+| §4 | 루프 — 교정은 채팅이 아니라 매뉴얼에 반영. 프로세스·툴박스·증명 중 어느 층인지 진단 |
+| §5 | 프로젝트 전용 에이전트 (`<repo>/.claude/agents/`) 위치 |
+| §6 | 웹 검색 결과를 쓸 때 — 날짜 확인, 신뢰 순서, 버전 명시 |
+| §7 | 버그를 만났을 때 — 재현 → 가설 검증 → 근본 원인 → 회귀 테스트 |
+| §8 | Graphify 사용 |
 
-경계는 **파일을 고치는가** 하나다. 오타 1개 수정도, 리뷰 지적 반영도 위임한다.
-이전 정책은 "위임 비용이 이득보다 크다" 는 이유로 국소 수정과 리뷰 반영을
-직접 처리로 뒀지만, 그 판단을 뒷받침할 측정치가 없었다. 아래 실험이 그
-측정치를 만든다.
+## 정책 이력
 
-## 에이전트 목록
+| 기간 | 방식 |
+|---|---|
+| ~ 2026-08-31 | 국소 수정은 직접, 나머지는 위임 |
+| 2026-09-01 ~ 10-19 | **역할 위임** — 파일 수정은 전부 역할별 전문 에이전트 15종에 위임 |
+| 2026-10-20 ~ | **범용 + 매뉴얼** — 역할 에이전트 폐기, 메인 세션이 매뉴얼을 따라 직접 처리 |
 
-`쓰기` 열이 없는 에이전트는 `Edit`/`Write` 도구가 없어 코드를 고치지 못한다
-(분석·감사·설명 전용).
+전환 근거: 역할 에이전트는 원칙만 담은 범용 프롬프트였고, 실제 업무 지식(절차·함정·완료 기준)은
+레포의 커맨드·규칙에 있었다. 일 단위 매뉴얼에 지식을 모으고 교정을 그 매뉴얼에 되먹이는 쪽이
+쓸수록 나아진다는 판단이다. 역할 에이전트 정의는 git 이력(`agents/`, 2026-10-20 삭제 직전 커밋)에 남아 있다.
 
-`색` 은 frontmatter `color` 로, Claude Code 작업 목록과 트랜스크립트에서 에이전트를 구분하는 표시색이다. 부서가 아니라 행동으로 묶는다 — blue 코드 작성, yellow 읽기 전용 감사, purple 읽기 전용 설계·설명, green 문서, orange 조율.
-
-| 이름 | 담당 | 모델 | effort | 색 | 쓰기 |
-|---|---|---|---|---|---|
-| `software-architect` | 시스템 설계, 기술 스택 결정, 대규모 리팩터링 계획 | opus | high | purple | — |
-| `security-expert` | 취약점 점검, 인증/인가 검토, OWASP | opus | high | yellow | — |
-| `backend-engineer` | 서버 로직, REST/GraphQL API, 비즈니스 로직 | sonnet | medium | blue | ✓ |
-| `frontend-engineer` | UI 컴포넌트, 스타일링, 클라이언트 상태 관리 | sonnet | medium | blue | ✓ |
-| `database-administrator` | 스키마 설계, 쿼리 튜닝, 마이그레이션 | sonnet | medium | blue | ✓ |
-| `code-reviewer` | 작성된 코드의 품질·버그 감사 | sonnet | high | yellow | — |
-| `test-engineer` | 테스트 작성, 커버리지 분석, 테스트 전략 | sonnet | medium | blue | ✓ |
-| `devops-engineer` | CI/CD, Docker/K8s, 배포, 인프라 | sonnet | medium | blue | ✓ |
-| `performance-engineer` | 병목 분석, 프로파일링, 최적화 | sonnet | high | yellow | — |
-| `codebase-archaeologist` | 세션·도구를 거쳐 쌓인 코드 불일치·중복·드리프트 감사 | opus | high | yellow | — |
-| `data-engineer` | ETL 파이프라인, 데이터 모델링, 스트림 처리 | sonnet | medium | blue | ✓ |
-| `ml-ai-engineer` | ML 모델, LLM 연동, RAG, 프롬프트 설계 | sonnet | medium | blue | ✓ |
-| `codebase-explainer` | 낯선 레포 구조·흐름 파악, 온보딩 로드맵 | sonnet | medium | purple | — |
-| `project-manager` | 3개 이상 도메인이 얽힌 대형 다단계 작업 조율 | sonnet | medium | orange | ✓ |
-| `technical-writer` | README, API 문서, ADR, 체인지로그 | haiku | low | green | ✓ |
-
-`backend-engineer` · `frontend-engineer` · `database-administrator` · `data-engineer` ·
-`devops-engineer` · `ml-ai-engineer` 에는 **Bug Investigation** 절이 있고,
-`performance-engineer` 는 같은 순서를 **When the Regression Is New** 절로 갖는다.
-`CLAUDE.md` §2 가 원인 미상 버그를 도메인 전문가에게 넘기라고 지시하므로, 받는 쪽에
-조사 절차가 있어야 한다.
-
-`project-manager` 는 위임 정책이 대체한다. 사용자가 이름을 직접 부르거나 여러
-전문 분야가 얽힌 다단계 작업일 때만 쓴다.
-
-## 위임 정책 실험 (2026-09-01 ~)
-
-신규 구축이든 유지보수든 파일 수정은 전부 위임하도록 §1·§2 를 고쳤다. 목적은
-**제로샷 대비 컨텍스트 효율을 측정할 표본을 만드는 것** 이다.
-
-지표는 **턴당 메인 세션 입력 토큰** 이다. 총 토큰이 아니다 — 위임하면
-서브에이전트가 파일을 다시 읽으므로 총량은 늘어난다. 줄어드는 것은 메인
-컨텍스트의 성장이고, 입력 토큰의 85% 가 `cache_read`(매 턴 컨텍스트 재독)
-이므로 메인 컨텍스트가 작으면 이후 모든 턴이 싸진다.
+## 측정
 
 ```bash
-scripts/token-metrics.py                      # 전체 기간
-scripts/token-metrics.py --since 2026-09-02   # 정책 변경 이후만
-scripts/token-metrics.py --band 11-30         # 턴 수를 맞춰 비교
-scripts/token-metrics.py --json metrics/2026-10.json
+scripts/token-metrics.py --since 2026-10-20           # 전환 이후
+scripts/token-metrics.py --since 2026-09-01 --until 2026-10-19   # 역할 위임 기간
+scripts/token-metrics.py --band 11-30                 # 턴 수를 맞춰 비교
+scripts/token-metrics.py --by-mode                    # [mode:xxx] 태그별 총 입력·교정 수
 ```
 
-`--band` 가 중요하다. 밴드 없이 비교하면 결론이 뒤집힌다 — 위임 세션이 애초에
-큰 작업이라서 그렇다. 정책 변경 직전 베이스라인이 이 함정을 보여준다.
+- **턴당 메인 입력**: 메인 컨텍스트 성장. 위임하면 줄고 직접 처리하면 는다.
+- **턴당 총 입력**(메인+서브체인): 실제 처리량. 위임은 서브에이전트가 파일을 다시 읽어 늘어난다.
+- **턴당 교정**: 결과 품질 대용. 키워드 휴리스틱이라 말없는 교정은 놓친다.
+- `cache_read` 는 일반 입력과 1:1 로 더해진다. 요금은 약 1/10 이므로 토큰 수 ≠ 비용.
 
-| 비교 방식 | 위임 (턴당) | 제로샷 (턴당) | 차이 |
-|---|---|---|---|
-| 전체 세션 (n=15 vs 181) | 8,239,724 | 7,391,288 | **+11.5%** |
-| 11-30턴만 (n=9 vs 55) | 5,610,888 | 7,691,466 | **−27.1%** |
-
-표본이 작고(위임 n=9) 무작위 배정이 아니므로 이 수치는 상관이며 인과가 아니다.
-방향만 참고한다. 표본을 쌓는 것이 실험의 목적이다.
+`--band` 가 중요하다. 밴드 없이 비교하면 결론이 뒤집힌다 — 위임 세션이 애초에 큰 작업이었다.
+모든 수치는 무작위 배정이 아니므로 상관이며 인과가 아니다.
 
 측정 결과는 `metrics/` 에 저장되고 `.gitignore` 로 제외된다. 프로젝트 경로명이
 들어가기 때문이며, 이 레포는 공개다. `--by-project` 출력도 커밋하지 않는다.
@@ -111,8 +73,8 @@ cd ~/Personal/claude-config
 `install.sh` 는 기본적으로 **symlink** 로 건다. 레포 파일을 고치면 즉시
 반영되고, `git pull` 한 번으로 모든 PC 가 같은 설정이 된다.
 
-설치 과정은 3단계로 나뉜다. [1/3] 에이전트 정의, [2/3] 전역 규칙 `CLAUDE.md`, [3/3] 도구 설치.
-도구는 다음 4가지다:
+설치 과정은 2단계다. [1/2] 전역 규칙 `CLAUDE.md` (예전 설치가 남긴 `~/.claude/agents/` 링크도 정리),
+[2/2] 도구 설치. 도구는 다음 4가지다:
 
 - **ponytail** — Claude Code 플러그인. 최소 구현 강제 (SessionStart/SubagentStart/UserPromptSubmit hook).
   플러그인 `ponytail@ponytail` (마켓플레이스 GitHub `DietrichGebert/ponytail`).
@@ -121,7 +83,7 @@ cd ~/Personal/claude-config
 - **typescript-lsp / pyright-lsp** — Claude Code 플러그인. TS/Python 코드 인텔리전스(LSP).
   플러그인 `typescript-lsp@claude-plugins-official`, `pyright-lsp@claude-plugins-official`.
   서버는 `npm install -g typescript-language-server typescript pyright` 로 설치.
-- **graphify** — CLI 도구. 코드베이스의 지식 그래프를 생성해 구조 질의를 빠르게 한다 (CLAUDE.md §7).
+- **graphify** — CLI 도구. 코드베이스의 지식 그래프를 생성해 구조 질의를 빠르게 한다 (CLAUDE.md §8).
   `uv tool install graphifyy`.
 
 **선택 의존성:**
@@ -142,43 +104,25 @@ cd ~/Personal/claude-config
 CLAUDE_HOME=~/test-claude ./install.sh --dry-run
 ```
 
-기존 `~/.claude/CLAUDE.md` 나 동명의 에이전트가 있으면 백업 없이 교체한다.
+기존 `~/.claude/CLAUDE.md` 는 백업 없이 교체한다. `--copy` 로 설치했던 PC 의
+옛 에이전트 파일(`~/.claude/agents/*.md`)은 자동으로 지우지 않으니 직접 지운다.
 
 ## 설정 수정 흐름
 
-symlink 설치 기준으로 `~/.claude/agents/backend-engineer.md` 를 고치면
-이 레포의 파일이 바로 수정된다. 그대로 커밋·푸시하면 된다.
+symlink 설치 기준으로 `~/.claude/CLAUDE.md` 를 고치면 이 레포의 파일이 바로
+수정된다. 그대로 커밋·푸시하면 된다.
 
 ```bash
 cd ~/Personal/claude-config
-git add -A && git commit -m "backend-engineer: ..." && git push
+git add -A && git commit -m "CLAUDE.md: ..." && git push
 ```
 
 다른 PC 에서는 `git pull` 만 하면 끝. Claude Code 는 세션 시작 시
 설정을 읽으므로, 반영하려면 세션을 새로 띄운다.
 
-## 에이전트 정의 형식
-
-```markdown
----
-name: backend-engineer          # 파일명과 반드시 일치
-description: 언제 이 에이전트를 쓸지. 메인 세션이 이걸 보고 라우팅한다.
-tools: Read, Edit, Write, Bash, Grep, Glob, WebSearch, WebFetch
-model: sonnet                   # opus | sonnet | haiku
-effort: medium                  # low | medium | high
----
-
-여기부터 에이전트의 시스템 프롬프트.
-```
-
-`name` 이 파일명과 다르면 호출되지 않는다. 이름을 바꿀 때는 `CLAUDE.md`
-라우팅 표와 `agents/project-manager.md` 의 표까지 같이 고쳐야 한다.
-
-읽기 전용으로 만들려면 `tools` 에서 `Edit` · `Write` 를 뺀다.
-
 ## 포함하지 않는 것
 
 `~/.claude/settings.json` 은 PC 마다 다른 권한 허용 목록·statusLine 경로가 들어가므로 의도적으로 제외했다. 필요한 항목만 새 PC 에서 직접 설정한다. 다만 플러그인(`ponytail`, `context7`, `typescript-lsp`, `pyright-lsp`)은 설치 시 Claude Code 가 자동으로 `settings.json` 에 등록하므로 수동 설정이 필요 없다.
 
-프로젝트 전용 에이전트(`<repo>/.claude/agents/`)도 해당 레포가 관리한다.
-`CLAUDE.md` §4 에 어느 레포에 무엇이 있는지만 적어 둔다.
+매뉴얼(스킬)과 프로젝트 전용 에이전트(`<repo>/.claude/`)는 해당 레포가 관리한다.
+`CLAUDE.md` §5 에 어느 레포에 무엇이 있는지만 적어 둔다.
