@@ -11,13 +11,29 @@
     scripts/token-metrics.py --since 2026-09-02  # 정책 변경 이후만
     scripts/token-metrics.py --band 11-30        # 턴 수를 맞춰 비교
     scripts/token-metrics.py --by-project        # 프로젝트별 (사내 경로명 출력 주의)
+    scripts/token-metrics.py --by-mode           # A/B 모드별 (첫 프롬프트에 [mode:role] 처럼 태그)
     scripts/token-metrics.py --json metrics/baseline.json
 
 출력에는 프로젝트 경로명이 기본적으로 포함되지 않는다. --by-project 로 켜면
 사내 레포명이 찍히므로, 저장 결과를 공개 레포에 커밋하지 않는다(metrics/ 는
 .gitignore 처리).
 """
-import argparse, collections, json, os, statistics, sys
+import argparse, collections, json, os, re, statistics, sys
+
+MODE_RE = re.compile(r'\[mode:([a-z0-9_-]+)\]')
+STRIP_RE = re.compile(r'<(system-reminder|pasted_content)[^>]*>.*?(</\1>|$)', re.S)
+# sessions.py 의 INJECTED_PREFIXES 복사본
+INJECTED_PREFIXES = ('The following is the Codex agent history',)
+MAX_MESSAGE_CHARS = 1200  # 이보다 긴 발화는 작업 지시서라 교정으로 세지 않는다
+# 교정 키워드: dwe-platform/.claude/skills/morning-routine/scripts/sessions.py 의 CORRECTION_RE 복사본.
+# 바꾸면 양쪽을 같이 바꾼다 (레포 간 import 금지).
+# ponytail: 키워드 휴리스틱이라 말없는·암묵적 교정은 놓친다. 올릴 때는 LLM 분류로.
+CORRECTION_RE = re.compile(
+    r"((^|[\s.?!])아니(야|지|요|고)?[\s,.!]|그게 아니|틀렸|틀린|잘못|말고|하지\s?마|하지말|왜\s.*(했|한|하냐)|"
+    r"다시\s?(해|하|봐|확인)|정정|되돌|원복|이해가 안|그렇게 하면 안|\bwrong\b|\bdon'?t\b|\bnot what\b|"
+    r"\binstead\b|\bstop\b|\bundo\b|\brevert\b)",
+    re.I,
+)
 
 GLOBAL_AGENTS = {
     'software-architect', 'security-expert', 'backend-engineer', 'frontend-engineer',
@@ -29,7 +45,8 @@ GLOBAL_AGENTS = {
 
 def blank():
     return {'turns': 0, 'main_in': 0, 'side_in': 0, 'main_out': 0, 'peak': 0,
-            'assists': 0, 'agents': set(), 'proj': '', 'start': ''}
+            'assists': 0, 'agents': set(), 'proj': '', 'start': '',
+            'mode': 'untagged', 'mode_ts': '', 'corrections': 0, 'seen': set()}
 
 
 def collect(root):
@@ -60,6 +77,18 @@ def collect(root):
                     if (e.get('type') == 'user' and not sidechain
                             and isinstance(content, str) and content.strip()):
                         s['turns'] += 1
+                        # 모드·교정은 사람이 보낸 발화만 본다 (옛 포맷은 turnOrigin 없음).
+                        if e.get('turnOrigin') in (None, 'human'):
+                            text = re.sub(r'\s+', ' ', STRIP_RE.sub(' ', content)).strip()
+                            m = MODE_RE.search(text)
+                            if m and (not s['mode_ts'] or ts < s['mode_ts']):
+                                s['mode'], s['mode_ts'] = m.group(1), ts
+                            # 이어받기·분기 세션이 앞 발화를 복사하므로 같은 발화는 한 번만 센다.
+                            if (text and not text.startswith(('<',) + INJECTED_PREFIXES)
+                                    and len(text) <= MAX_MESSAGE_CHARS
+                                    and text not in s['seen'] and CORRECTION_RE.search(text)):
+                                s['corrections'] += 1
+                            s['seen'].add(text)
 
                     usage = msg.get('usage')
                     if usage:
@@ -99,6 +128,23 @@ def summarize(sel):
     }
 
 
+def by_mode(sel):
+    out = {}
+    for m in sorted({s['mode'] for s in sel}):
+        g = [s for s in sel if s['mode'] == m]
+        turns = sum(s['turns'] for s in g)
+        main_in, side_in = sum(s['main_in'] for s in g), sum(s['side_in'] for s in g)
+        corr = sum(s['corrections'] for s in g)
+        out[m] = {
+            'sessions': len(g), 'turns': turns, 'total_in': main_in + side_in,
+            'total_in_per_turn': (main_in + side_in) // turns,
+            'main_in_per_turn': main_in // turns,
+            'side_share_pct': round(side_in * 100 / max(1, main_in + side_in), 1),
+            'corrections': corr, 'corrections_per_turn': round(corr / turns, 3),
+        }
+    return out
+
+
 def fmt(label, d):
     if not d:
         return f'{label:12} (표본 없음)'
@@ -116,6 +162,8 @@ def main():
     ap.add_argument('--band', help='사용자 턴 수 범위로 표본을 맞춘다 (예: 11-30)')
     ap.add_argument('--by-project', action='store_true',
                     help='프로젝트별로 분해 (사내 레포명이 출력된다)')
+    ap.add_argument('--by-mode', action='store_true',
+                    help='[mode:xxx] 태그별로 분해 (태그 없으면 untagged)')
     ap.add_argument('--json', metavar='PATH', help='결과를 JSON 으로 저장')
     a = ap.parse_args()
 
@@ -172,6 +220,15 @@ def main():
             per[p] = r
             print(f"  {p[:46]:46} n={r['sessions']:4d}  {r['main_in_per_turn']:>11,}")
         out['by_project'] = per
+
+    if a.by_mode:
+        print('\n모드별')
+        out['by_mode'] = by_mode(rows)
+        for m, r in out['by_mode'].items():
+            print(f"  {m:12} n={r['sessions']:4d} 턴={r['turns']:5d}  "
+                  f"총입력 {r['total_in']:>14,}  턴당총입력 {r['total_in_per_turn']:>11,}  "
+                  f"턴당메인입력 {r['main_in_per_turn']:>11,}  서브체인 비중 {r['side_share_pct']:>5.1f}%  "
+                  f"교정 {r['corrections']:4d} (턴당 {r['corrections_per_turn']:.3f})")
 
     if a.json:
         os.makedirs(os.path.dirname(os.path.abspath(a.json)), exist_ok=True)
