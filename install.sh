@@ -36,13 +36,18 @@ echo
 link_or_copy() {
   local src="$1" dst="$2"
   run rm -rf "$dst"
-  if [ "$MODE" = symlink ]; then run ln -s "$src" "$dst"; else run cp "$src" "$dst"; fi
+  if [ "$MODE" = symlink ]; then run ln -s "$src" "$dst"; else run cp -R "$src" "$dst"; fi
 }
 
-echo "[1/2] CLAUDE.md"
-run mkdir -p "$DEST"
+echo "[1/2] CLAUDE.md · 개인 매뉴얼(skills)"
+run mkdir -p "$DEST/skills"
 link_or_copy "$REPO/CLAUDE.md" "$DEST/CLAUDE.md"
 echo "  CLAUDE.md"
+for d in "$REPO"/skills/*/; do
+  name="$(basename "$d")"
+  link_or_copy "${d%/}" "$DEST/skills/$name"
+  echo "  skills/$name"
+done
 # 2026-10-20 역할 에이전트 폐기: 예전 설치가 남긴 링크(이제 끊어짐)를 지운다
 if [ -d "$DEST/agents" ]; then
   find "$DEST/agents" -maxdepth 1 -type l -lname "$REPO/agents/*" -print | while read -r l; do
