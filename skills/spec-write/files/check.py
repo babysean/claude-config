@@ -102,10 +102,10 @@ def self_test():
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '잘 된다'))                # 화살표 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '[조건] → [기대 결과]'))   # 자리표시
     assert test_list_fails('a', spec.replace('로직', ''))                                # 빈칸
-    for f in ('change', 'new'):
-        tpl = pathlib.Path(__file__).with_name(f'spec-template-{f}.md').read_text()
-        assert form_fails(f, headings(tpl)) == [], f'{f} 템플릿 절이 검사와 어긋남'
-        assert test_list_fails(f, tpl), f'빈 {f} 템플릿은 실패해야 함'
+    for f in ('변경', '신규'):
+        tpl = pathlib.Path(__file__).with_name(f'명세-템플릿-{f}.md').read_text()
+        assert form_fails(f, headings(tpl)) == [], f'{f}형 템플릿 절이 검사와 어긋남'
+        assert test_list_fails(f, tpl), f'빈 {f}형 템플릿은 실패해야 함'
     change, new = ['용어', '현재 흐름', '고칠 곳', '바뀐 흐름'], ['용어', '목적과 쓰는 사람', '만들 것', '기존과 붙는 곳']
     assert form_fails('a', change) == [] and form_fails('a', new) == []
     assert form_fails('a', [h for h in new if h != '만들 것']) == ['a: 신규형 "만들 것" 절 없음']
@@ -117,7 +117,7 @@ def self_test():
     assert plan_fails(plan.replace('  - 01.md 만료 토큰 → 401 — test_expired\n', ''))
     assert plan_fails('## 1. 뼈대\n- 테스트: 만료 토큰 401 / 쿠키 HttpOnly\n- 커밋: ①\n') == []   # 한 줄 형식
     assert plan_fails('## 1. 뼈대\n- 테스트(가짜 응답): 403 확인\n') == []                       # 괄호 붙은 이름
-    assert plan_fails(pathlib.Path(__file__).with_name('plan-template.md').read_text()), '빈 계획 템플릿은 실패해야 함'
+    assert plan_fails(pathlib.Path(__file__).with_name('구현계획-템플릿.md').read_text()), '빈 계획 템플릿은 실패해야 함'
     print('self-test 통과')
 
 
