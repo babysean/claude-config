@@ -7,7 +7,7 @@ Claude Code 개인 설정. 여러 PC 에서 같은 전역 작업 규칙을 쓰�
 | 경로 | 설치 위치 | 역할 |
 |---|---|---|
 | `CLAUDE.md` | `~/.claude/CLAUDE.md` | 전역 작업 규칙 — 범용 + 매뉴얼 방식, 증명, 매뉴얼 고치기 루프, 웹 검색 출처 검증, 버그 대응 순서 |
-| `skills/<job>/` | `~/.claude/skills/<job>/` | 개인 매뉴얼. `design-doc` — 구현 전 명세서 작성·확정 (SDD) |
+| `skills/<job>/` | `~/.claude/skills/<job>/` | 개인 매뉴얼. `spec-write` — 구현 전 명세서 작성·확정 (SDD) · `spec-build` — 구현계획 PR 하나 구현~머지 |
 | `install.sh` | — | 설치 스크립트 (symlink / 복사). [1/2] CLAUDE.md·skills, [2/2] 도구 설치 |
 | `scripts/token-metrics.py` | — | 작업 방식별 토큰·교정 측정 |
 | ponytail@ponytail | Claude Code 플러그인 | 최소 구현 강제 (SessionStart/SubagentStart/UserPromptSubmit hook) |

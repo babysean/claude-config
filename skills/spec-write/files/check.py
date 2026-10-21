@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""명세서 폴더가 design-doc 완료 기준 1~6 을 지키는지 검사한다.
+"""명세서 폴더가 spec-write 완료 기준 1~6 을 지키는지 검사한다.
 
 사용법: check.py <.requirements/주제 폴더>
 통과하면 0, 하나라도 실패하면 1 로 끝난다. 항목마다 한 줄씩 통과/실패를 출력한다.
@@ -22,7 +22,7 @@ def headings(text):
 
 def check(folder):
     fails = []
-    mds = sorted(m for m in folder.glob('*.md') if m.name != '진행.md')  # implement-plan 장부, 명세 아님
+    mds = sorted(m for m in folder.glob('*.md') if m.name != '진행.md')  # spec-build 장부, 명세 아님
     if not mds:
         return [f'{folder}: md 파일 없음']
     for md in mds:
