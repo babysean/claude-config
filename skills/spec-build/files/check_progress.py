@@ -91,7 +91,7 @@ def self_test():
     scr = ok.replace('| 로직 | `pytest a::t` → FAILED 200 != 401 (abc1234) |', '| 화면 | - |')
     assert check(scr.replace('- `tdd.py verify` → 로직 1줄 실패→통과 확인 (head 1234567)\n', ''), 1) == []  # 화면만이면 verify 불필요
     assert check(ok.replace('| 로직 |', '| 기타 |'), 1)                       # 종류 오타
-    tpl = open(__file__.replace('check_progress.py', '진행-템플릿.md'), encoding='utf-8').read()
+    tpl = open(__file__.replace('check_progress.py', 'progress-template.md'), encoding='utf-8').read()
     assert len(check(tpl, 1)) >= 3, check(tpl, 1)                     # 빈 템플릿은 실패
     print('self-test 통과')
 
