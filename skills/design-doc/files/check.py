@@ -22,7 +22,7 @@ def headings(text):
 
 def check(folder):
     fails = []
-    mds = sorted(folder.glob('*.md'))
+    mds = sorted(m for m in folder.glob('*.md') if m.name != '진행.md')  # implement-plan 장부, 명세 아님
     if not mds:
         return [f'{folder}: md 파일 없음']
     for md in mds:
