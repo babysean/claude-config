@@ -1,5 +1,7 @@
 # notes (최신이 위)
 
+- 2026-10-21 · 프로세스 · bug-fix 매뉴얼 추가로 "한 줄도 명세 먼저" 와 충돌 → 기록된 의도와 다른 버그 수정은 예외(bug-fix), 새 동작이 생기면 명세
+
 - 2026-10-21 · 이름 · design-doc·implement-plan → spec-write·spec-build (같은 앞말로 한 흐름의 앞뒤임을 드러냄)
 
 - 2026-10-21 · 툴박스 · spec-build 의 장부 `진행.md` 가 같은 폴더에 생겨 check.py 가 명세로 오인(5건 실패) → 검사 대상에서 제외, 9단계에 spec-build 연결
