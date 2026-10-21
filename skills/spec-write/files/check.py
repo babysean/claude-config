@@ -9,7 +9,7 @@ import pathlib, re, sys
 MAX_CHARS = 4000  # 5분 읽기. ponytail: 글자 수 근사, 실제 이해 시간은 사람이 판단
 CODE_NAME = re.compile(r'(?<![#\w/.-])(?:[A-Z]{1,2}-?\d{1,2}(?:-[a-z])?)(?![\w.-])')
 REVISION = re.compile(r'\d+\s*차\s*(반영|개정|수정)|반영 이력|변경 이력|TBD|미정')
-FLOW = ('현재 흐름', '고칠 곳', '바뀐 흐름')
+FORMS = {'변경형': ('현재 흐름', '고칠 곳', '바뀐 흐름'), '신규형': ('목적', '만들 것', '기존과 붙는 곳')}
 PLACEHOLDER = re.compile(r'^\[[^\]]*\]$')  # 칸 전체가 [자리표시]
 
 
@@ -43,6 +43,14 @@ def test_list_fails(name, text):
     return fails
 
 
+def form_fails(name, hs):
+    has = {k: [s for s in v if any(h.startswith(s) for h in hs)] for k, v in FORMS.items()}
+    if has['변경형'] and has['신규형']:
+        return [f'{name}: 두 틀의 절이 섞임 ({", ".join(has["변경형"] + has["신규형"])}) → 틀 하나로, 다른 쪽은 파일을 쪼갤 것']
+    form = '신규형' if has['신규형'] else '변경형'  # 아무 절도 없으면 기존 기본값 변경형으로 안내
+    return [f'{name}: {form} "{s}" 절 없음' for s in FORMS[form] if s not in has[form]]
+
+
 def plan_fails(text):
     fails = []
     for m in re.finditer(r'^## (\d+)\.\s[^\n]*$(.*?)(?=^## |\Z)', body(text), re.M | re.S):
@@ -70,9 +78,7 @@ def check(folder):
         if not hs or not hs[0].startswith('용어'):
             fails.append(f'{md.name}: 첫 절이 "용어" 가 아님')
         if md.name != '구현계획.md':
-            for f in FLOW:
-                if not any(h.startswith(f) for h in hs):
-                    fails.append(f'{md.name}: "{f}" 절 없음')
+            fails += form_fails(md.name, hs)
             fails += test_list_fails(md.name, t)
         else:
             fails += plan_fails(t)
@@ -96,8 +102,16 @@ def self_test():
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '잘 된다'))                # 화살표 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '[조건] → [기대 결과]'))   # 자리표시
     assert test_list_fails('a', spec.replace('로직', ''))                                # 빈칸
-    tpl = pathlib.Path(__file__).with_name('명세-템플릿.md').read_text()
-    assert test_list_fails('tpl', tpl), '빈 명세 템플릿은 실패해야 함'
+    for f in ('변경', '신규'):
+        tpl = pathlib.Path(__file__).with_name(f'명세-템플릿-{f}.md').read_text()
+        assert form_fails(f, headings(tpl)) == [], f'{f}형 템플릿 절이 검사와 어긋남'
+        assert test_list_fails(f, tpl), f'빈 {f}형 템플릿은 실패해야 함'
+    change, new = ['용어', '현재 흐름', '고칠 곳', '바뀐 흐름'], ['용어', '목적과 쓰는 사람', '만들 것', '기존과 붙는 곳']
+    assert form_fails('a', change) == [] and form_fails('a', new) == []
+    assert form_fails('a', [h for h in new if h != '만들 것']) == ['a: 신규형 "만들 것" 절 없음']
+    assert form_fails('a', [h for h in change if h != '고칠 곳']) == ['a: 변경형 "고칠 곳" 절 없음']
+    assert form_fails('a', change + ['만들 것'])                                          # 섞임
+    assert len(form_fails('a', ['용어'])) == 3                                            # 아무 틀도 없음
     plan = '## 용어\n## 1. 뼈대\n- 범위: a\n- 테스트:\n  - 01.md 만료 토큰 → 401 — test_expired\n- 커밋 마일스톤:\n'
     assert plan_fails(plan) == []
     assert plan_fails(plan.replace('  - 01.md 만료 토큰 → 401 — test_expired\n', ''))
