@@ -18,12 +18,15 @@ def sub(sec, name):
     return m.group(1) if m else ''
 
 
-RUN = re.compile(r'^`[^`\[]+`\s*→\s*[^\s\[]')  # `명령` → 결과 (자리표시 아님)
+RUN = re.compile(r'^`(?!\[[^`]*\]`)[^`]+`\s*→\s*[^\s\[]')  # `명령` → 결과 (명령 전체가 [자리표시] 면 아님, 명령 안 [ ] 는 통과)
 
 
 def table(sec, name):
     return [[c.strip() for c in l.strip().strip('|').split('|')] for l in sub(sec, name).splitlines()
             if l.strip().startswith('|') and not re.match(r'^\|[\s|:-]+\|$', l.strip())][1:]  # 머리줄 제외
+
+
+MUTATION = re.compile(r'^변이:\s*\S.*→\s*FAILED\s+\S')
 
 
 def check(text, n, head=None):
@@ -43,7 +46,8 @@ def check(text, n, head=None):
             fails.append(f'테스트 줄 이름 없음: {" | ".join(cells)}')
         if not RUN.match(green):
             fails.append(f'통과 기록 없음: {case}')
-        if kind == '로직' and not (RUN.match(red) and re.search(r'\([0-9a-f]{7,40}\)\s*$', red)):
+        mutated = MUTATION.match(red)  # 앞 줄 구현으로 이미 충족된 줄: 변이 확인으로 대신 (SKILL.md 결정 규칙)
+        if kind == '로직' and not mutated and not (RUN.match(red) and re.search(r'\([0-9a-f]{7,40}\)\s*$', red)):
             fails.append(f'로직인데 실패 커밋 기록 없음 (tdd.py red 로 실패를 먼저 볼 것): {case}')
         elif kind not in ('로직', '화면', '설정'):
             fails.append(f'종류가 로직·화면·설정이 아님: {case}')
@@ -86,11 +90,16 @@ def self_test():
     assert check(ok.replace('`a.py:3`', '`[파일:줄]`'), 1)             # 백틱 안 자리표시
     assert check(ok.replace('a.py:3', 'app/[id]/page.tsx:3'), 1) == []  # 경로의 [ ] 는 통과
     assert check(ok, 2) == ['"## 2." 절 없음']
+    assert check(ok.replace('`pytest a::t` → passed', "`python3 -c \"d['k']\"` → passed"), 1, '1234567aaaa') == []  # 명령 안 [ ] 는 통과
+    assert check(ok.replace('`pytest a::t` → passed (def5678)', '`[명령]` → passed ([커밋])'), 1)  # 명령 자리표시
     assert check(ok.replace('`pytest a::t` → FAILED 200 != 401 (abc1234)', '-'), 1)   # 로직인데 실패 기록 없음
     assert check(ok.replace('| `pytest a::t` → passed (def5678) |', '| - |'), 1)       # 통과 기록 없음
     scr = ok.replace('| 로직 | `pytest a::t` → FAILED 200 != 401 (abc1234) |', '| 화면 | - |')
     assert check(scr.replace('- `tdd.py verify` → 로직 1줄 실패→통과 확인 (head 1234567)\n', ''), 1) == []  # 화면만이면 verify 불필요
     assert check(ok.replace('| 로직 |', '| 기타 |'), 1)                       # 종류 오타
+    mut = ok.replace('`pytest a::t` → FAILED 200 != 401 (abc1234)', '변이: a.py:9 만료 검사 삭제 → FAILED 200 != 401 (되돌림)')
+    assert check(mut, 1, '1234567aaaa') == []                                 # 변이 확인은 실패 커밋 대신
+    assert check(ok.replace('`pytest a::t` → FAILED 200 != 401 (abc1234)', '변이: 해 봄'), 1)  # FAILED 없음
     tpl = open(__file__.replace('check_progress.py', '진행-템플릿.md'), encoding='utf-8').read()
     assert len(check(tpl, 1)) >= 3, check(tpl, 1)                     # 빈 템플릿은 실패
     print('self-test 통과')

@@ -16,8 +16,9 @@ verify 로직 줄마다 실패 커밋으로 옮겨 다시 실패하는지, HEAD 
 import os, re, subprocess, sys, tempfile, pathlib
 
 TRAILER = 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>'
-BAD_RED = re.compile(r'ImportError|ModuleNotFoundError|NameError|SyntaxError|IndentationError|'
-                     r'Cannot find module|is not defined|error collecting|no tests ran|collected 0 items|'
+BAD_RED = re.compile(r'ImportError|ModuleNotFoundError|No module named|NameError|SyntaxError|IndentationError|'
+                     r"Cannot find module|is not defined|module '[\w.]+' has no attribute|"
+                     r'error collecting|no tests ran|collected 0 items|'
                      r'No test files found|ERROR at (?:setup|teardown)|\d+ errors? in \d|^ERROR |'
                      r'ConnectionRefused|OperationalError|could not connect', re.I | re.M)
 REASON = re.compile(r'(AssertionError.*|assert .*|FAILED .*|Expected.*|expected.*|✗.*|× .*)')
@@ -45,7 +46,8 @@ def reason(out):
 
 
 def red_ok(code, out):
-    return code != 0 and not BAD_RED.search(out)
+    # pytest 종료 코드 5 = 고른 테스트 없음 (-k 가 아무것도 못 고름). 출력에 'no tests ran' 이 없을 수 있다
+    return code not in (0, 5) and not BAD_RED.search(out)
 
 
 def set_cell(path, n, case, col, value):
@@ -61,7 +63,7 @@ def set_cell(path, n, case, col, value):
         elif sec and in_tests and l.strip().startswith('|'):
             cells = [c.strip() for c in l.strip().strip('|').split('|')]
             if cells and cells[0] == case and len(cells) >= 4:
-                cells[col] = value
+                cells[col] = value.replace('|', '¦')  # 명령 속 | 가 표 칸을 깨지 않게
                 lines[i] = '| ' + ' | '.join(cells) + ' |'
                 p.write_text('\n'.join(lines), encoding='utf-8')
                 return
@@ -112,9 +114,16 @@ def verify(path, n):
     branch, head = git('branch', '--show-current', cwd=top), git('rev-parse', 'HEAD', cwd=top)
     if not branch:
         sys.exit('브랜치 위에서 실행할 것 (detached 상태)')
-    fails, checked = [], []
+    fails, checked, mutated = [], [], []
     for cells in rows(path, n):
         if len(cells) < 4 or cells[1] != '로직':
+            continue
+        if cells[2].startswith('변이:'):  # 앞 줄 구현으로 이미 충족 — 실패 커밋 대신 변이 확인, HEAD 통과만 다시 본다
+            cmd = re.search(r'`([^`]+)`', cells[3])
+            if not cmd:
+                fails.append(f'{cells[0]}: 변이 줄인데 통과 칸에 명령 없음')
+            else:
+                mutated.append((cells[0], cmd.group(1)))
             continue
         m = re.search(r'\(([0-9a-f]{7,40})\)\s*$', cells[2])
         if not m:
@@ -143,12 +152,17 @@ def verify(path, n):
         code, out = run(cmd, cwd, f'{n}-verify-green')
         if code:
             fails.append(f'{case}: HEAD 에서 통과하지 않음 (exit {code})')
+    for case, cmd in mutated:
+        code, out = run(cmd, os.getcwd(), f'{n}-verify-mutated')
+        if code:
+            fails.append(f'{case}: HEAD 에서 통과하지 않음 (exit {code})')
     for f in fails:
         print('실패:', f)
     if fails or not checked:
         sys.exit('검증 실패' if fails else '검증할 로직 줄 없음')
     text = pathlib.Path(path).read_text(encoding='utf-8')
-    line = f'- `tdd.py verify` → 로직 {len(checked)}줄 실패→통과 확인 (head {head[:7]})'
+    extra = f', 변이 확인 {len(mutated)}줄 HEAD 통과' if mutated else ''
+    line = f'- `tdd.py verify` → 로직 {len(checked)}줄 실패→통과 확인{extra} (head {head[:7]})'
     text = re.sub(r'^- `tdd\.py verify` → .*$\n?', '', text, flags=re.M)  # 이전 검증 줄 교체
     m = re.search(rf'(^## {n}\.\s.*?^### 완료 증거\s*\n)', text, re.M | re.S)
     if not m:
@@ -162,6 +176,10 @@ def self_test():
     assert red_ok(1, 'E       assert 0 == 2\n1 failed in 0.01s') and reason('E       assert 0 == 2') == 'assert 0 == 2'
     assert not red_ok(1, 'ERROR t.py::test_db - ConnectionRefusedError: devdb down\n1 error in 0.01s')  # fixture 오류
     assert not red_ok(2, "E   ModuleNotFoundError: No module named 'nope'")                          # 이름 없음
+    assert not red_ok(5, '7 deselected, 24 warnings in 1.22s')                                      # -k 가 0개 고름
+    assert not red_ok(1, "E   AttributeError: module 'app.orchestrator' has no attribute 'status'")  # 이름 없음
+    assert red_ok(1, "E   AttributeError: 'NoneType' object has no attribute 'user_email'\n1 failed")  # 동작 실패
+    assert not red_ok(1, '.venv/bin/python: No module named pytest')                              # venv 없음
     with tempfile.TemporaryDirectory() as d:
         sh = lambda *a: subprocess.run(a, cwd=d, check=True, capture_output=True)
         sh('git', 'init', '-q', '-b', 'feature/t')
