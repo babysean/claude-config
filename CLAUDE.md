@@ -72,7 +72,7 @@
 
 - `~/IdeaProjects/dwe-itservice-repo` → `design-qa`, `reviewer`
 - `~/Personal/ditter` → `reviewer`
-- `~/dwe-platform` → `reviewer` (홈 바로 밑. IdeaProjects/Personal 아래가 아니다)
+- `~/dwe-platform` → 없음 (리뷰는 GitHub 의 Rumi. 레포는 홈 바로 밑, IdeaProjects/Personal 아래가 아니다)
 
 ## 6. 웹 검색 결과를 쓸 때
 
@@ -99,6 +99,6 @@
 구조·의존성 질문은 `graphify-out/graph.json` 존재 시 grep/Explore **전에** `query/explain/path/affected` 사용 (메인 컨텍스트 절약).
 
 - **수정 전:** `graphify affected "X"` → 영향 범위 파악 (§7·ponytail 보충)
-- **수정 후:** `graphify update .` → 갱신 (LLM 무비용)
+- **수정 후:** git 훅(`.git/hooks/post-commit`·`post-merge`·`post-checkout` 에 graphify)이 있으면 손대지 않는다 — 훅이 갱신한다 (`graphify-out/.post-merge.log`). 훅 없는 레포만 `graphify update .` (LLM 무비용이지만 전체 재분석이라 10분 이상)
 - **그래프 미존재:** 자동 생성 금지, 사용자에게 한 번만 제안. 결과는 힌트 — 검증은 실제 파일 (§3)
 - **서브에이전트:** 프롬프트에 그래프 존재 여부 명시

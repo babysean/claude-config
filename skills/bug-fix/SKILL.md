@@ -41,7 +41,7 @@ description: 이미 있는 동작이 의도와 다르게 돌아가는 버그 하
 11. **`/new-pr`.** PR 본문 `### 배경` 에 **문장으로**(목록 말고 — Rumi 는 `배경` 의 목록 아닌 줄만 읽는다):
     증상 · 근본 원인 · 왜 그 자리에서 고치나 · 재현 테스트 이름 · 범위 밖에 남은 같은 패턴. 틀린 가설·시도는 `.done/` 작업 기록에.
     이후 `/pr-review-loop` → Rumi 지적 수정 → APPROVE → **사람 머지 승인** → `/pr-merge` → `/cleanup`.
-12. **머지 뒤.** 메인 체크아웃에서 `graphify update .`. 보고: 근본 원인 한 줄 · 재현 테스트 · 범위 밖 같은 패턴 위치.
+12. **머지 뒤.** graph 갱신은 `/cleanup` 의 develop 갱신 때 git 훅이 한다 — 손으로 돌리지 않는다 (훅 없는 레포만 `graphify update .`). 보고: 근본 원인 한 줄 · 재현 테스트 · 범위 밖 같은 패턴 위치.
 
 ## 결정 규칙
 
@@ -58,7 +58,7 @@ description: 이미 있는 동작이 의도와 다르게 돌아가는 버그 하
 1. 재현 테스트가 **수정 전 커밋에서 실패**하고 **수정 후 통과**한 출력이 이번 세션에 있다 (화면은 전·후 스크린샷)
 2. 그 영역 기존 테스트 통과, `/ponytail-review` 지적 처리
 3. PR 본문 `### 배경` 에 근본 원인이 문장으로 있다
-4. Rumi APPROVE → 사람 머지 승인 → `/pr-merge` `merged` → `/cleanup` → `graphify update .`
+4. Rumi APPROVE → 사람 머지 승인 → `/pr-merge` `merged` → `/cleanup` (graph 는 git 훅이 갱신)
 
 ## 하지 않는 것
 
