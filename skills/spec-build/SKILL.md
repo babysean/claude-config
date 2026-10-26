@@ -11,12 +11,15 @@ description: 확정된 구현계획(spec-write 가 만든 `.requirements/<주제
 ## 입력과 위치
 
 - 주제 폴더: **메인 체크아웃**의 `.requirements/<주제>/` — `구현계획.md`, 명세 md, `진행.md`.
-  워크트리 안에 있어도 메인 경로에 쓴다: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`.
+  메인 경로: `dirname "$(git rev-parse --path-format=absolute --git-common-dir)"`. 셋 다 `spec-write` 가 메인 체크아웃
+  세션에서 만들어 둔다. 이 매뉴얼은 워크트리 세션에서 돌고 명세·구현계획은 **읽기만** 한다.
+  명세를 고쳐야 하면 멈추고 메인 체크아웃 세션의 `spec-write` 로 넘긴다.
 - 주제·번호는 말에서 찾는다. 단위 이름("로그인")이면 구현계획 순서표에서 번호를 찾는다.
   주제가 모호하면 `.requirements/*/구현계획.md` 목록에서 고르게 한다.
 - PR 번호(구현계획의 순서 번호)가 없으면 `진행.md` 에서 머지 안 된 첫 번호를 제안하고 확인받는다.
-- 장부: `진행.md` (`files/진행-템플릿.md`). 없으면 만든다. 워크트리 격리 세션은 메인 경로에 쓰지 못한다 —
-  그때는 세션 scratchpad 에 쓰고 `check_progress.py` 도 그 파일로 돌린 뒤, `/cleanup` 으로 워크트리를 나와 메인 경로로 복사한다.
+- 장부: `진행.md` (`files/진행-템플릿.md`, 옛 주제라 없으면 만든다). 메인 경로에 쓴다. 워크트리 격리 세션이라 막히면
+  세션 scratchpad 사본에 쓰고 `check_progress.py` 도 그 사본으로 돌린다. 메인으로 옮기는 `cp` 명령은 11단계 보고에
+  **한 번만** 넣는다 — 중간에 복사를 따로 부탁하지 않는다.
   대화가 압축되면 기억보다 **`진행.md` 와 `git log`** 를 믿는다.
 
 ## 순서
@@ -71,7 +74,8 @@ description: 확정된 구현계획(spec-write 가 만든 `.requirements/<주제
    상태 `PR 올림 #<번호>`. 이후는 `/pr-review-loop` 가 이어서 한다: Rumi 차단 지적 수정 → APPROVE → 결정 기록 →
    **"PR #N 머지할까요?" 사람 승인** → `/pr-merge` → `/cleanup`.
 10. **머지 뒤.** 메인 체크아웃에서 `graphify update .`, `진행.md` 상태 `머지 <sha>`. 사용자가 `나중에` 를 고르면 상태 `리뷰 통과` 로 두고 끝낸다.
-11. **보고.** 판정 목록(전부, 순서대로, 틀렸을 때 비용 포함) · Rumi low 참고 · shortcut 목록 · 다음 PR 번호.
+11. **보고.** 판정 목록(전부, 순서대로, 틀렸을 때 비용 포함) · Rumi low 참고 · shortcut 목록 · 다음 PR 번호
+    · (사본에 썼으면) `진행.md` 를 메인으로 옮기는 `cp` 한 줄.
 
 ## 결정 규칙
 
@@ -109,7 +113,7 @@ description: 확정된 구현계획(spec-write 가 만든 `.requirements/<주제
 - 사용자가 PR 을 올리라고 명시하기 전에 `/pr`
 - 사람 승인 없이 머지 (자동 머지로 바꿀 때는 이 매뉴얼이 아니라 `/pr-review-loop` 의 머지 확인을 바꾼다)
 - 한 세션에서 PR 여러 개
-- 워크트리 안 `.requirements/` 에 쓰기
+- 워크트리 안 `.requirements/` 에 쓰기, 명세·구현계획 고치기 (`spec-write` 몫)
 
 ## 파일
 
