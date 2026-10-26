@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""명세서 폴더가 spec-write 완료 기준 1~8 을 지키는지 검사한다.
+"""명세서 폴더가 spec-write 완료 기준 1~7 을 지키는지 검사한다.
 
 사용법: check.py <.requirements/주제 폴더>      (--self-test 로 자체 검사)
 통과하면 0, 하나라도 실패하면 1 로 끝난다. 항목마다 한 줄씩 통과/실패를 출력한다.
@@ -88,8 +88,6 @@ def check(folder):
         rev = sorted(set(m.group(0) for m in REVISION.finditer(b)))
         if rev:
             fails.append(f'{md.name}: 개정 이력·미결 표시 {", ".join(rev)}')
-        if not md.with_suffix('.html').exists():
-            fails.append(f'{md.name}: 짝 html 없음')
     return fails
 
 
