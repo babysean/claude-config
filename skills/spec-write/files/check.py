@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""명세서 폴더가 spec-write 완료 기준 1~7 을 지키는지 검사한다.
+"""명세서 폴더가 spec-write 완료 기준 1~8 을 지키는지 검사한다.
 
 사용법: check.py <.requirements/주제 폴더>      (--self-test 로 자체 검사)
 통과하면 0, 하나라도 실패하면 1 로 끝난다. 항목마다 한 줄씩 통과/실패를 출력한다.
@@ -11,6 +11,8 @@ CODE_NAME = re.compile(r'(?<![#\w/.-])(?:[A-Z]{1,2}-?\d{1,2}(?:-[a-z])?)(?![\w.-
 REVISION = re.compile(r'\d+\s*차\s*(반영|개정|수정)|반영 이력|변경 이력|TBD|미정')
 FORMS = {'변경형': ('현재 흐름', '고칠 곳', '바뀐 흐름'), '신규형': ('목적', '만들 것', '기존과 붙는 곳')}
 PLACEHOLDER = re.compile(r'^\[[^\]]*\]$')  # 칸 전체가 [자리표시]
+FLOW_MAX = 7
+JUDGES = ('사람', '코드', 'LLM', '외부')
 
 
 def body(text):
@@ -26,12 +28,36 @@ def section(text, name, level='##'):
     return m.group(1) if m else None
 
 
+def table(sec):
+    rows = [l.strip() for l in sec.splitlines() if l.strip().startswith('|')]
+    head = [c.strip() for c in rows[0].strip('|').split('|')] if rows else []
+    return head, [r for r in rows[1:] if not re.match(r'^\|[\s|:-]+\|$', r)]  # 머리줄·구분줄 제외
+
+
+def flow_fails(name, text):
+    sec = section(text, '핵심 흐름')
+    if sec is None:
+        return [f'{name}: "핵심 흐름" 절 없음 (대표 상황 하나를 처음부터 끝까지, 대화로 확인받은 흐름)']
+    head, rows = table(sec)
+    if '판단' not in head:
+        return [f'{name}: 핵심 흐름 표에 "판단" 칸 없음']
+    if not 1 <= len(rows) <= FLOW_MAX:
+        return [f'{name}: 핵심 흐름 {len(rows)}단계 (1~{FLOW_MAX}단계로 묶을 것)']
+    fails = []
+    for r in rows:
+        cells = [c.strip() for c in r.strip('|').split('|')]
+        if len(cells) < len(head) or any(not c or re.search(r'\[[^\]]*\]', c) for c in cells):
+            fails.append(f'{name}: 핵심 흐름 줄에 빈칸·자리표시: {r}')
+        elif not cells[head.index('판단')].startswith(JUDGES):
+            fails.append(f'{name}: 핵심 흐름 판단 칸이 {"·".join(JUDGES)} 중 하나로 시작하지 않음: {r}')
+    return fails
+
+
 def test_list_fails(name, text):
     sec = section(text, '테스트 목록')
     if sec is None:
         return [f'{name}: "테스트 목록" 절 없음']
-    rows = [l.strip() for l in sec.splitlines() if l.strip().startswith('|')]
-    rows = [r for r in rows[1:] if not re.match(r'^\|[\s|:-]+\|$', r)]  # 머리줄·구분줄 제외
+    rows = table(sec)[1]
     if not rows:
         return [f'{name}: 테스트 목록에 줄 없음']
     fails = []
@@ -68,6 +94,9 @@ def check(folder):
     mds = sorted(m for m in folder.glob('*.md') if m.name != '진행.md')  # spec-build 장부, 명세 아님
     if not mds:
         return [f'{folder}: md 파일 없음']
+    specs = [m for m in mds if m.name != '구현계획.md']
+    if specs:  # 쪼갠 경우 00-개요 에만 둔다
+        fails += flow_fails(specs[0].name, specs[0].read_text())
     for md in mds:
         t = md.read_text()
         b = body(t)
@@ -100,10 +129,21 @@ def self_test():
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '잘 된다'))                # 화살표 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '[조건] → [기대 결과]'))   # 자리표시
     assert test_list_fails('a', spec.replace('로직', ''))                                # 빈칸
+    flow = ('## 핵심 흐름\n\n| 단계 | 누가 | 들어가는 것 → 나오는 것 | 판단 | 실패하면 |\n|---|---|---|---|---|\n'
+            '| 1 | 사용자 | 질문 → 요청 | 사람 — 질문 고름 | 없음 |\n'
+            '| 2 | LLM | 질문 → 도구 이름 | LLM — 부를 도구 고름 | 답 없음 표시 |\n')
+    assert flow_fails('a', flow) == []
+    assert flow_fails('a', '## 용어\n')                                                  # 절 없음
+    assert flow_fails('a', flow.replace('LLM — 부를', '아무개 — 부를'))                   # 판단 값 틀림
+    assert flow_fails('a', flow.replace('답 없음 표시', ''))                              # 빈칸
+    assert flow_fails('a', flow.replace('| 판단 |', '| 결정 |'))                          # 판단 칸 없음
+    assert flow_fails('a', flow + '| 3 | 서버 | a → b | 코드 — c | d |\n' * 6)           # 8단계
     for f in ('변경', '신규'):
         tpl = pathlib.Path(__file__).with_name(f'명세-템플릿-{f}.md').read_text()
         assert form_fails(f, headings(tpl)) == [], f'{f}형 템플릿 절이 검사와 어긋남'
+        assert headings(tpl)[:2] == ['용어', '핵심 흐름'], f'{f}형 템플릿 절 순서'
         assert test_list_fails(f, tpl), f'빈 {f}형 템플릿은 실패해야 함'
+        assert flow_fails(f, tpl), f'빈 {f}형 템플릿 핵심 흐름은 실패해야 함'
     change, new = ['용어', '현재 흐름', '고칠 곳', '바뀐 흐름'], ['용어', '목적과 쓰는 사람', '만들 것', '기존과 붙는 곳']
     assert form_fails('a', change) == [] and form_fails('a', new) == []
     assert form_fails('a', [h for h in new if h != '만들 것']) == ['a: 신규형 "만들 것" 절 없음']
