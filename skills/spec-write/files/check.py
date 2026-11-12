@@ -65,7 +65,7 @@ def test_list_fails(name, text):
     for r in rows:
         cells = [c.strip() for c in r.strip('|').split('|')]
         missed += cells[0] == MISSED
-        if cells[0] == MISSED and len(cells) >= 3 and cells[2].startswith('없음'):
+        if cells[0] == MISSED and len(cells) >= 3 and cells[2].startswith('없음') and '→' not in cells[2]:
             if not re.match(r'^없음\s*—\s*\S', cells[2]):
                 fails.append(f'{name}: "{MISSED}" 없음 줄에 이유 없음 ("없음 — <이유>"): {r}')
             none += 1
