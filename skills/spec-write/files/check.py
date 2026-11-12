@@ -139,6 +139,7 @@ def self_test():
     none = f'| {MISSED} | 없음 | 없음 — 지침 한 줄 수정 |\n'
     assert test_list_fails('a', bare + none) == [], '없음 — 이유 한 줄은 통과해야 함'
     assert test_list_fails('a', bare + f'| {MISSED} | 없음 | 없음 |\n'), '이유 없는 없음은 실패해야 함'
+    assert test_list_fails('a', spec + none), '없음 줄과 실제 줄이 섞이면 실패해야 함'
     assert test_list_fails('a', bare + f'| {MISSED} | 로직 | 빈 값 → 400 |\n' * 6), '놓치기 쉬운 실패 6줄은 실패해야 함'
     assert test_list_fails('a', spec.replace('## 테스트 목록', '## 확인 방법'))            # 절 없음
     assert test_list_fails('a', bare.replace('| 로그인 | 로직 | 만료 토큰 → 401 |\n', ''))  # 줄 없음
