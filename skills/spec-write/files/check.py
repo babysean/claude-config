@@ -13,7 +13,7 @@ FORMS = {'변경형': ('현재 흐름', '고칠 곳', '바뀐 흐름'), '신규�
 PLACEHOLDER = re.compile(r'^\[[^\]]*\]$')  # 칸 전체가 [자리표시]
 FLOW_MAX = 7
 JUDGES = ('사람', '코드', 'LLM', '외부')
-MISSED = '놓치기 쉬운 실패'  # 명세에 없지만 쓰는 사람이 겪을 상황. 테스트 목록 첫 칸 이름
+MISSED, MISSED_MAX = '놓치기 쉬운 실패', 5  # 명세에 없지만 쓰는 사람이 겪을 상황. 테스트 목록 첫 칸 이름
 
 
 def body(text):
@@ -72,6 +72,8 @@ def test_list_fails(name, text):
             fails.append(f'{name}: 테스트 목록 줄이 "조건 → 기대 결과" 가 아님: {r}')
     if not missed:
         fails.append(f'{name}: 테스트 목록에 "{MISSED}" 줄 없음 (명세에 없지만 겪을 상황 1~5개, 없으면 "없음 — 이유")')
+    elif missed > MISSED_MAX:
+        fails.append(f'{name}: "{MISSED}" 줄 {missed}개 (1~{MISSED_MAX}개, 일어날 법한 것부터)')
     return fails
 
 
