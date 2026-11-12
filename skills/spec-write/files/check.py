@@ -130,6 +130,8 @@ def self_test():
     bare, spec = spec, spec + f'| {MISSED} | 로직 | 빈 비밀번호 → 400 |\n'
     assert test_list_fails('a', spec) == []
     assert test_list_fails('a', bare), '놓치기 쉬운 실패 줄 없으면 실패해야 함'
+    none = f'| {MISSED} | 없음 | 없음 — 지침 한 줄 수정 |\n'
+    assert test_list_fails('a', bare + none) == [], '없음 — 이유 한 줄은 통과해야 함'
     assert test_list_fails('a', spec.replace('## 테스트 목록', '## 확인 방법'))            # 절 없음
     assert test_list_fails('a', bare.replace('| 로그인 | 로직 | 만료 토큰 → 401 |\n', ''))  # 줄 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '잘 된다'))                # 화살표 없음
