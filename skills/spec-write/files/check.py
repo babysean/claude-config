@@ -13,6 +13,7 @@ FORMS = {'변경형': ('현재 흐름', '고칠 곳', '바뀐 흐름'), '신규�
 PLACEHOLDER = re.compile(r'^\[[^\]]*\]$')  # 칸 전체가 [자리표시]
 FLOW_MAX = 7
 JUDGES = ('사람', '코드', 'LLM', '외부')
+MISSED = '놓치기 쉬운 실패'  # 명세에 없지만 쓰는 사람이 겪을 상황. 테스트 목록 첫 칸 이름
 
 
 def body(text):
@@ -60,12 +61,15 @@ def test_list_fails(name, text):
     rows = table(sec)[1]
     if not rows:
         return [f'{name}: 테스트 목록에 줄 없음']
-    fails = []
+    fails, missed = [], 0
     for r in rows:
         cells = [c.strip() for c in r.strip('|').split('|')]
+        missed += cells[0] == MISSED
         if len(cells) < 3 or any(not c or PLACEHOLDER.match(c) for c in cells) or '→' not in cells[2] \
                 or re.search(r'\[[^\]]*\]\s*→|→\s*\[[^\]]*\]', cells[2]):
             fails.append(f'{name}: 테스트 목록 줄이 "조건 → 기대 결과" 가 아님: {r}')
+    if not missed:
+        fails.append(f'{name}: 테스트 목록에 "{MISSED}" 줄 없음 (명세에 없지만 겪을 상황 1~5개, 없으면 "없음 — 이유")')
     return fails
 
 
@@ -123,10 +127,11 @@ def check(folder):
 def self_test():
     spec = ('## 용어\n## 현재 흐름\n## 고칠 곳\n## 바뀐 흐름\n## 테스트 목록\n\n'
             '| 항목 | 종류 | 조건 → 기대 결과 |\n|---|---|---|\n| 로그인 | 로직 | 만료 토큰 → 401 |\n')
+    bare, spec = spec, spec + f'| {MISSED} | 로직 | 빈 비밀번호 → 400 |\n'
     assert test_list_fails('a', spec) == []
-    assert test_list_fails('a', spec), '놓치기 쉬운 실패 줄 없으면 실패해야 함'
+    assert test_list_fails('a', bare), '놓치기 쉬운 실패 줄 없으면 실패해야 함'
     assert test_list_fails('a', spec.replace('## 테스트 목록', '## 확인 방법'))            # 절 없음
-    assert test_list_fails('a', spec.replace('| 로그인 | 로직 | 만료 토큰 → 401 |\n', ''))  # 줄 없음
+    assert test_list_fails('a', bare.replace('| 로그인 | 로직 | 만료 토큰 → 401 |\n', ''))  # 줄 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '잘 된다'))                # 화살표 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '[조건] → [기대 결과]'))   # 자리표시
     assert test_list_fails('a', spec.replace('로직', ''))                                # 빈칸
