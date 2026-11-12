@@ -111,7 +111,7 @@ def check(folder):
             fails += test_list_fails(md.name, t)
         else:
             fails += plan_fails(t)
-        codes = sorted(set(CODE_NAME.findall(b)))
+        codes = sorted(set(CODE_NAME.findall(re.sub(r'`[^`\n]*`', '', b))))  # `S3`·`EC2` 같은 제품명은 백틱으로 빼 준다
         if codes:
             fails.append(f'{md.name}: 내부 코드명 {", ".join(codes)} → 우리말 이름으로')
         rev = sorted(set(m.group(0) for m in REVISION.finditer(b)))
@@ -156,6 +156,9 @@ def self_test():
     assert plan_fails('## 1. 뼈대\n- 테스트: 만료 토큰 401 / 쿠키 HttpOnly\n- 커밋: ①\n') == []   # 한 줄 형식
     assert plan_fails('## 1. 뼈대\n- 테스트(가짜 응답): 403 확인\n') == []                       # 괄호 붙은 이름
     assert plan_fails(pathlib.Path(__file__).with_name('구현계획-템플릿.md').read_text()), '빈 계획 템플릿은 실패해야 함'
+    tmp = pathlib.Path(__import__('tempfile').mkdtemp())
+    (tmp / '00.md').write_text('## 용어\n`S3` 에 저장, P1 단계\n')
+    assert any('P1' in f and 'S3' not in f for f in check(tmp) if '코드명' in f), '백틱 안 제품명은 코드명 아님'
     print('self-test 통과')
 
 
