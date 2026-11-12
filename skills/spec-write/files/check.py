@@ -139,6 +139,7 @@ def self_test():
     bare, spec = spec, spec + f'| {MISSED} | 로직 | 빈 비밀번호 → 400 |\n'
     assert test_list_fails('a', spec) == []
     assert test_list_fails('a', bare), '놓치기 쉬운 실패 줄 없으면 실패해야 함'
+    assert test_list_fails('a', spec + f'| {MISSED} | 로직 | 두 번 누름 → 토큰 하나 |\n') == [], '놓치기 쉬운 실패 2줄은 통과해야 함'
     none = f'| {MISSED} | 없음 | 없음 — 지침 한 줄 수정 |\n'
     assert test_list_fails('a', bare + none) == [], '없음 — 이유 한 줄은 통과해야 함'
     assert test_list_fails('a', bare + f'| {MISSED} | 없음 | 없음 |\n'), '이유 없는 없음은 실패해야 함'
@@ -179,6 +180,10 @@ def self_test():
     tmp = pathlib.Path(__import__('tempfile').mkdtemp())
     (tmp / '00.md').write_text('## 용어\n`S3` 에 저장, P1 단계\n')
     assert any('P1' in f and 'S3' not in f for f in check(tmp) if '코드명' in f), '백틱 안 제품명은 코드명 아님'
+    split = pathlib.Path(__import__('tempfile').mkdtemp())
+    (split / '00-개요.md').write_text(spec)
+    (split / '01-단위.md').write_text(bare)
+    assert [f.split(':')[0] for f in check(split) if MISSED in f] == ['01-단위.md'], '쪼갠 명세는 파일마다 검사'
     print('self-test 통과')
 
 
