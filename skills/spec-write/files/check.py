@@ -124,6 +124,7 @@ def self_test():
     spec = ('## 용어\n## 현재 흐름\n## 고칠 곳\n## 바뀐 흐름\n## 테스트 목록\n\n'
             '| 항목 | 종류 | 조건 → 기대 결과 |\n|---|---|---|\n| 로그인 | 로직 | 만료 토큰 → 401 |\n')
     assert test_list_fails('a', spec) == []
+    assert test_list_fails('a', spec), '놓치기 쉬운 실패 줄 없으면 실패해야 함'
     assert test_list_fails('a', spec.replace('## 테스트 목록', '## 확인 방법'))            # 절 없음
     assert test_list_fails('a', spec.replace('| 로그인 | 로직 | 만료 토큰 → 401 |\n', ''))  # 줄 없음
     assert test_list_fails('a', spec.replace('만료 토큰 → 401', '잘 된다'))                # 화살표 없음
