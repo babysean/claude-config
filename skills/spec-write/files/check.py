@@ -65,6 +65,8 @@ def test_list_fails(name, text):
     for r in rows:
         cells = [c.strip() for c in r.strip('|').split('|')]
         missed += cells[0] == MISSED
+        if cells[0] == MISSED and len(cells) >= 3 and cells[2].startswith('없음'):
+            continue  # 해당 없음 — 화살표 대신 이유
         if len(cells) < 3 or any(not c or PLACEHOLDER.match(c) for c in cells) or '→' not in cells[2] \
                 or re.search(r'\[[^\]]*\]\s*→|→\s*\[[^\]]*\]', cells[2]):
             fails.append(f'{name}: 테스트 목록 줄이 "조건 → 기대 결과" 가 아님: {r}')
