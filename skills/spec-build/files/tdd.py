@@ -88,6 +88,8 @@ def commit(files, msg, body, cwd):
 
 
 def step(kind, path, n, case, files, msg, cmd):
+    if case not in [r[0] for r in rows(path, n)]:  # 커밋 전에 확인 — 커밋만 남고 기록이 빠지는 일을 막는다
+        sys.exit(f'진행.md {n}번 테스트 표에 "{case}" 줄이 없음 — 먼저 표에 옮길 것')
     cwd = os.getcwd()
     rel = os.path.relpath(cwd, git('rev-parse', '--show-toplevel'))
     code, out = run(cmd, cwd, f'{n}-{kind}')

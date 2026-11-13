@@ -26,6 +26,7 @@ description: 확정된 구현계획(spec-write 가 만든 `.requirements/<주제
   세션 scratchpad 사본에 쓰고 `check_progress.py` 도 그 사본으로 돌린다. 메인으로 옮기는 `cp` 명령은 11단계 보고에
   **한 번만** 넣는다 — 중간에 복사를 따로 부탁하지 않는다.
   대화가 압축되면 기억보다 **`진행.md` 와 `git log`** 를 믿는다.
+  **`진행.md` 는 여러 꼬붕이 동시에 쓴다 — Write 로 파일 전체를 쓰지 말고 Edit 로 내 N번 절만 바꾼다.**
 
 ## 순서
 
@@ -79,6 +80,8 @@ description: 확정된 구현계획(spec-write 가 만든 `.requirements/<주제
    상태 `PR 올림 #<번호>`. 이후는 `/pr-review-loop` 가 이어서 한다: Rumi 차단 지적 수정 → APPROVE → 결정 기록 →
    **"PR #N 머지할까요?" 를 형님께 직접 묻기**(형님 승인 원문이 있을 때만 진행) → `/pr-merge` → `/cleanup`.
 10. **머지 뒤.** 메인 체크아웃에서 `graphify update .`, `진행.md` 상태 `머지 <sha>`. 형님이 `나중에` 를 고르면 상태 `리뷰 통과` 로 두고 끝낸다.
+    리뷰 반영·작업 기록 커밋으로 head 가 바뀌었으면 **최종 head 에서 `tdd.py verify` 를 다시 돌려**(테스트를 돌릴 폴더에서) 완료 증거 줄의 head 를 바꾸고
+    `check_progress.py` 가 그 head 로 통과하는지 확인한다. 팀장 보관 확인이 이 head 로 검사한다.
 11. **최종 보고** (이 세션을 만든 팀장 세션으로 가는 마지막 메시지). 첫 줄 상태 · 커밋 목록 · `check_progress.py` 결과 · 로컬 테스트 표 · 판정 목록(전부, 순서대로, 틀렸을 때 비용 포함) · Rumi low 참고 · shortcut 목록 · 다음 PR 번호
     · (사본에 썼으면) `진행.md` 를 메인으로 옮기는 `cp` 한 줄.
 
